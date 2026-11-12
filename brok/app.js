@@ -531,32 +531,33 @@ function route() {
 function showHome() {
   const d = (state.progress.days || {})[today()] || { opgaver: 0, rigtige: 0 }, goal = 10, s = streak();
   const last = store.get("last", null);
+  const done = d.opgaver >= goal;
   view().innerHTML = `
-    <section class="hello">
-      <div><h1>Hej${state.me.name ? " " + esc(state.me.name) : ""}!</h1><p class="muted">Brøker er bare dele af noget hele. Vælg et emne, læs forklaringen, og øv dig.</p></div>
-      ${state.me.name ? "" : `<form class="namef" id="nf"><label for="nn">Hvad hedder du? <span class="muted small">(kun fornavn, gemmes kun på denne enhed)</span></label>
-        <div class="row"><input id="nn" maxlength="30" autocomplete="given-name"><button class="btn small">Gem</button></div></form>`}
-      <div class="stats">
-        <div class="stat"><b>${d.opgaver}</b><span>opgaver i dag</span></div>
-        <div class="stat"><b>${d.rigtige}</b><span>rigtige i dag</span></div>
-        <div class="stat"><b>${s}</b><span>${s === 1 ? "dag" : "dage"} i træk</span></div>
+    <section class="hero">
+      <div class="hero-top">
+        <div><p class="eyebrow">${done ? "Dagens mål er nået 🎉" : `Dagens mål: ${goal} opgaver`}</p>
+          <h1>Hej${state.me.name ? " " + esc(state.me.name) : ""}!</h1></div>
+        <div class="ring" style="--p:${Math.min(100, Math.round(d.opgaver / goal * 100))}" role="img" aria-label="${d.opgaver} af ${goal} opgaver i dag">
+          <span><b>${d.opgaver}</b><small>af ${goal}</small></span></div>
       </div>
-      <div class="goal"><div class="goal-bar"><i style="width:${Math.min(100, d.opgaver / goal * 100)}%"></i></div>
-        <span class="small muted">${d.opgaver >= goal ? "Dagens mål er nået. Godt gået! 🎉" : `Dagens mål: ${goal} opgaver (${goal - d.opgaver} tilbage)`}</span></div>
-      <div class="row">
-        ${last && TOPIC[last] ? `<a class="btn primary" href="#/oev/${last}">Fortsæt: ${esc(TOPIC[last].title)}</a>` : `<a class="btn primary" href="#/laer/hvad">Start med det første emne</a>`}
-        ${HAS_LLM ? `<a class="btn" href="#/spoerg">Spørg Brøkhjælperen</a>` : `<a class="btn" href="#/vaerksted">Prøv værkstedet</a>`}
-      </div>
+      <div class="pills"><span class="pill">✓ <b>${d.rigtige}</b> rigtige i dag</span><span class="pill">🔥 <b>${s}</b> ${s === 1 ? "dag" : "dage"} i træk</span></div>
+      ${state.me.name ? "" : `<form class="namef" id="nf"><label for="nn">Hvad hedder du? <span class="muted small">(kun fornavn, gemmes kun her)</span></label>
+        <input id="nn" maxlength="30" autocomplete="given-name" placeholder="Fornavn"><button class="btn small primary">Gem</button></form>`}
+      ${last && TOPIC[last] ? `<a class="btn primary wide" href="#/oev/${last}">Fortsæt: ${esc(TOPIC[last].title)} →</a>` : `<a class="btn primary wide" href="#/laer/hvad">Start med det første emne →</a>`}
     </section>
-    <p class="small muted">Dine niveauer og dagens opgaver gemmes kun i denne browser.${state.me.name ? ` Du hedder ${esc(state.me.name)} her. <button class="linkbtn" id="rename">Skift navn</button>` : ""}</p>
+    <div id="inst"></div>
     <h2>Emner</h2>
-    <div class="topics">${TOPICS.map((t, i) => `
-      <div class="topic">
-        <div class="tnum">${t.id === "prove" ? "★" : i + 1}</div>
-        <div class="tbody"><b>${esc(t.title)}</b><span class="muted small">${fmtLine(t.short)}</span>
-          ${t.id === "prove" ? "" : `<span class="stars" title="Niveau ${levelOf(t.id)}">${[0, 1, 2].map(k => `<i class="${k < stars(t.id) ? "on" : ""}">★</i>`).join("")}<small>niveau ${levelOf(t.id)}</small></span>`}</div>
-        <div class="tact">${LESSONS[t.id] ? `<a class="btn small" href="#/laer/${t.id}">Lær</a>` : ""}<a class="btn small primary" href="#/oev/${t.id}">Øv</a></div>
-      </div>`).join("")}</div>`;
+    <div class="tlist">${TOPICS.map((t, i) => `
+      <div class="trow${t.id !== "prove" && stars(t.id) === 3 ? " done" : ""}">
+        <a class="tmain" href="#/${LESSONS[t.id] ? "laer" : "oev"}/${t.id}">
+          <span class="tnum">${t.id === "prove" ? "★" : i + 1}</span>
+          <span class="tbody"><b>${esc(t.title)}</b><span class="muted small">${fmtLine(t.short)}</span>
+            ${t.id === "prove" ? "" : `<span class="lvl" title="Niveau ${levelOf(t.id)}" aria-label="Niveau ${levelOf(t.id)}">${[0, 1, 2].map(k => `<i class="${k < stars(t.id) ? "on" : ""}"></i>`).join("")}</span>`}</span>
+        </a>
+        <a class="tgo" href="#/oev/${t.id}" aria-label="Øv ${esc(t.title.toLowerCase())}">Øv</a>
+      </div>`).join("")}</div>
+    <p class="small muted foot">Dine niveauer og dagens opgaver gemmes kun på denne enhed.${state.me.name ? ` Du hedder ${esc(state.me.name)} her. <button class="linkbtn" id="rename">Skift navn</button>` : ""}</p>`;
+  renderInstall();
   const nf = $("#nf");
   if (nf) nf.onsubmit = e => { e.preventDefault(); state.me.name = $("#nn").value.trim().slice(0, 30); store.set("name", state.me.name); showHome(); };
   const rn = $("#rename");
@@ -945,10 +946,40 @@ function showSheet() {
     <section class="card"><table class="tbl sheet">${rows.map(([h, t]) => `<tr><th>${h}</th><td>${fmtLine(t)}</td></tr>`).join("")}</table></section>`;
 }
 
+// ---------- installér som app ----------
+let installEvt = null;
+const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+function renderInstall() {
+  const can = !standalone() && (installEvt || isIOS());
+  const box = $("#inst"), card = !!(box && can && !store.get("noinstall", false));
+  $("#who").innerHTML = can && installEvt && !card ? `<button class="btn small" id="inst-top">Installér</button>` : "";
+  const top = $("#inst-top");
+  if (top) top.onclick = doInstall;
+  if (!box) return;
+  if (!card) { box.innerHTML = ""; return; }
+  box.innerHTML = `<div class="install"><img src="icon.svg" alt="">
+    <div><b>Få Brøk Tutor som app</b><span class="small muted">${installEvt ? "Den ligger på hjemmeskærmen og virker også uden internet."
+      : "Tryk på Del-knappen (firkanten med pil op) i Safari, og vælg <b>Føj til hjemmeskærm</b>."}</span></div>
+    ${installEvt ? `<button class="btn small primary" id="inst-go">Installér</button>` : ""}<button class="x" id="inst-x" aria-label="Skjul">×</button></div>`;
+  const go = $("#inst-go");
+  if (go) go.onclick = doInstall;
+  $("#inst-x").onclick = () => { store.set("noinstall", true); renderInstall(); };
+}
+async function doInstall() {
+  if (!installEvt) return;
+  installEvt.prompt();
+  try { await installEvt.userChoice; } catch (e) { /* ignorer */ }
+  installEvt = null;
+  renderInstall();
+}
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; renderInstall(); });
+window.addEventListener("appinstalled", () => { installEvt = null; renderInstall(); toast("Brøk Tutor er installeret 🎉"); });
+
 // ---------- start ----------
 function start() {
-  $("#who").innerHTML = "";
   route();
+  renderInstall();
 }
 window.addEventListener("hashchange", route);
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});

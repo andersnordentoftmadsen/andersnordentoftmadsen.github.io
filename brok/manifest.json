@@ -1,29 +1,26 @@
 {
+  "id": "./",
   "name": "Brøk Tutor",
   "short_name": "Brøker",
   "description": "Lær brøker med forklaringer, opgaver og trinvise løsninger",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f5f4fa",
-  "theme_color": "#5b45d6",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#f6f5fb",
+  "theme_color": "#f6f5fb",
   "lang": "da",
+  "dir": "ltr",
+  "categories": ["education", "kids"],
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    },
-    {
-      "src": "icon-maskable-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Blandet træning", "url": "./#/oev/prove", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Værkstedet", "url": "./#/vaerksted", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Huskeark", "url": "./#/huskeark", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
   ]
 }
